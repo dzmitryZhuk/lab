@@ -1,4 +1,6 @@
 ﻿#include <iostream>
+#include <vector>
+#include <numeric>
 #include <ws2tcpip.h>
 #include "Winsock2.h"
 #include "string.h"
@@ -152,10 +154,12 @@ string SetErrorMsgText(string msgText, int code)
 	return  msgText + GetErrorMsgText(code);
 };
 
-//int setAverageCorrection(int averageCorrection[], int length)
-//{
+int setAverageCorrection(vector<int> &averageCorrection)
+{
 //реализация нахождения средней коррекции
-//}
+	int sum = accumulate(averageCorrection.begin(), averageCorrection.end(), 0); // НАХОДИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ ВЕКТОРА
+	return sum / averageCorrection.size();										 // ДЕЛИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ НА ИХ КОЛИЧЕСТВО
+}
 
 int main()
 {
@@ -170,7 +174,7 @@ int main()
 	SYSTEMTIME tm;//получение системного времени
 
 	clock_t c;//время работы сервера с момента запуска
-	int averageCorrection[50];//значение средней коррекции
+	vector<int> averageCorrection;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
 
 	//cout << "Сервер запущен" << endl; // TODO: to rus
 	cout << "Server running" << endl;
@@ -206,8 +210,9 @@ int main()
 			recvfrom(sS, (char*)&getsincro, sizeof(getsincro), NULL, (sockaddr*)&client, &lc);
 			c = clock();//отсчет времени
 			setsincro.correction = c - getsincro.correction; // ЗНАЧЕНИЕ КОРРЕКЦИИ = ТЕКУЩИЕ ТИКИ СЕРВЕРА - ЗНАЧЕНИЕ ТИКОВ КЛИЕНТА
-			//averageCorrection[count - 1] = реализация получения значения средней коррекции в одном эксперименте;
-			//average = setAverageCorrection(averageCorrection, count);//реализация получения значения средней коррекции за все эксперименты;
+			//реализация получения значения средней коррекции в одном эксперименте;
+			averageCorrection.push_back(setsincro.correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
+			average = setAverageCorrection(averageCorrection);//реализация получения значения средней коррекции за все эксперименты;
 			sendto(sS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&client, sizeof(client));
 
 
@@ -224,7 +229,7 @@ int main()
 			cout << endl << count << "." << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear//
 				<< " " << endl << tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond//
 				<< " Seconds " << tm.wMilliseconds << " Milliseconds " << endl << "Correction = " << "CORRECTION"//
-				<< ", Average correction = " << "CORRECTION AVG" << endl;//
+				<< ", Average correction = " << average << endl;//
 			cout << "Client's adress " << clientIP << endl;//
 
 			count++;
