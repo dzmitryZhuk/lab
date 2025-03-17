@@ -107,7 +107,8 @@ int main(int argc, char* argv[])
 		// TODO: to rus
 		// cout << "Должно быть 3 параметра: адрес сервера, порт сервера, значение задержки в тиках" << endl;
 		// cout << "Пример: 192.168.1.3 2000 1000" << endl;
-		cout << "3 parameters\n";
+		cout << "3 parameters must be\n";
+		return 0;
 	}
 	else
 	{
