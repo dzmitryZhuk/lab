@@ -146,8 +146,8 @@ int main()
 			SOCKADDR_IN client;
 			int lc = sizeof(client);
 			int average = 0;
-			GetSystemTime(&tm);
 			recvfrom(sS, (char*)&getsincro, sizeof(getsincro), NULL, (sockaddr*)&client, &lc);
+			GetSystemTime(&tm);
 			c = clock();//отсчет времени (сколько прошло тиков со старта программы)
 			setsincro.correction = c - getsincro.correction; // ЗНАЧЕНИЕ КОРРЕКЦИИ = ТЕКУЩИЕ ТИКИ СЕРВЕРА - ЗНАЧЕНИЕ ТИКОВ КЛИЕНТА
 			sendto(sS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&client, sizeof(client));
@@ -156,7 +156,7 @@ int main()
 			inet_ntop(AF_INET, &(reinterpret_cast<sockaddr_in*>(&client)->sin_addr), clientIP, INET_ADDRSTRLEN);
 			{
 				string client_id = clientIP;
-				client_id += to_string(setsincro.unique_id);
+				client_id += to_string(getsincro.unique_id);
 				if (connected_clients.find(client_id) == connected_clients.end()) // если данный клиент еще не подключался:
 					// тогда не нужно эту коррекцию учитывать при подсчете
 					// просто запоминаем клиента, чтобы дальше учитывали его при подсчете коррекции
@@ -166,15 +166,15 @@ int main()
 				else
 				{
 					averageCorrection.push_back(setsincro.correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
-					average = setAverageCorrection(averageCorrection);
+					average = setAverageCorrection(averageCorrection); //подсчитываем среднее значение коррекции
+					cout << endl << count << "." << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear
+						<< " " << endl << tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond
+						<< " Seconds " << tm.wMilliseconds << " Milliseconds " << endl << "Correction = " << setsincro.correction
+						<< ", Average correction = " << average << endl;
+					cout << "Client's adress " << clientIP << " (" << getsincro.unique_id << ")" << endl;
 				}
 			}
 
-			cout << endl << count << "." << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear//
-				<< " " << endl << tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond//
-				<< " Seconds " << tm.wMilliseconds << " Milliseconds " << endl << "Correction = " << setsincro.correction//
-				<< ", Average correction = " << average << endl;//
-			cout << "Client's adress " << clientIP << endl;//
 
 			count++;
 		}
