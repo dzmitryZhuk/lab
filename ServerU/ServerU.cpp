@@ -1,5 +1,5 @@
-﻿#include <iostream>
-#include <vector>
+#include <iostream>
+#include <ws2tcpip.h>
 #include "Winsock2.h"
 #include "string.h"
 #include "locale"
@@ -17,7 +17,7 @@ struct SETSINCRO//запрос клиента на синхронизацию с
 	int correction; //текущее значение счетчика времени
 };
 
-//TODO: ti rus
+//TODO: to rus
 //string GetErrorMsgText(int code)
 //{
 //	string msgText;
@@ -169,7 +169,7 @@ int main()
 	setsincro.correction = 0;//начальная установка из структуры
 	SYSTEMTIME tm;//получение системного времени
 
-	clock_t c;//внремя работы сервера с момента запуска
+	clock_t c;//время работы сервера с момента запуска
 	int averageCorrection[50];//значение средней коррекции
 
 	//cout << "Сервер запущен" << endl; // TODO: to rus
@@ -184,12 +184,12 @@ int main()
 		if (WSAStartup(MAKEWORD(2, 0), &wsaData) != 0)
 			throw SetErrorMsgText("Startup: ", WSAGetLastError());
 
-		if ((sS = socket(AF_INET, SOCK_DGRAM, NULL)) == INVALID_SOCKET)
+		if ((sS = socket(AF_INET, SOCK_DGRAM, NULL)) == INVALID_SOCKET) // ТУТ ФЛАГ SOCK_DGRAM ЗНАЧИТ ЧТО БУДЕМ ПЕРЕДАВАТЬ ДАННЫЕ ПО UDP
 			throw SetErrorMsgText("Socket: ", WSAGetLastError());
 
 		SOCKADDR_IN serv;
 		serv.sin_family = AF_INET;
-		serv.sin_port = htons(2000);
+		serv.sin_port = htons(2000);// ПОРТ, КОТОРЫЙ СЛУШАЕТ СЕРВЕР
 		serv.sin_addr.s_addr = INADDR_ANY;
 
 		if (bind(sS, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR)
@@ -205,7 +205,7 @@ int main()
 			GetSystemTime(&tm);
 			recvfrom(sS, (char*)&getsincro, sizeof(getsincro), NULL, (sockaddr*)&client, &lc);
 			c = clock();//отсчет времени
-			//setsincro.correction = реализация получения значения коррекции;
+			setsincro.correction = c - getsincro.correction; // ЗНАЧЕНИЕ КОРРЕКЦИИ = ТЕКУЩИЕ ТИКИ СЕРВЕРА - ЗНАЧЕНИЕ ТИКОВ КЛИЕНТА
 			//averageCorrection[count - 1] = реализация получения значения средней коррекции в одном эксперименте;
 			//average = setAverageCorrection(averageCorrection, count);//реализация получения значения средней коррекции за все эксперименты;
 			sendto(sS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&client, sizeof(client));
@@ -219,9 +219,9 @@ int main()
 			//	<< " Seconds " << "МИЛЛИСЕКУНДЫ УКАЗАТЬ" << " Milliseconds " << endl << "Correction = " << "КОРРЕКЦИЮ УКАЗАТЬ"//
 			//	<< ", Average correction = " << "СРЕДНЮЮ КОРРЕКЦИЮ УКАЗАТЬ" << endl;//
 			//cout << "Client's adress " << "АДРЕС КЛИЕНТА УКАЗАТЬ" << endl;//
-			cout << endl << count << "." << " Date and time " << "MONTH" << "/" << "DAY" << "/" << "YEAR"//
-				<< " " << endl << "HOURS" << " Hours " << "MIN" << " Minutes " << "SEC"//
-				<< " Seconds " << "MSEC" << " Milliseconds " << endl << "Correction = " << "CORRECTION"//
+			cout << endl << count << "." << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear//
+				<< " " << endl << tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond//
+				<< " Seconds " << tm.wMilliseconds << " Milliseconds " << endl << "Correction = " << "CORRECTION"//
 				<< ", Average correction = " << "CORRECTION AVG" << endl;//
 			cout << "Client's adress " << "CLIENT ADDRESS" << endl;//
 
