@@ -93,10 +93,10 @@ string SetErrorMsgText(string msgText, int code)
 	return  msgText + GetErrorMsgText(code);
 };
 
-int setAverageCorrection(vector<int> &averageCorrection)
+int calculateAverageCorrection(vector<int> &corrections)
 {
-	int sum = accumulate(averageCorrection.begin(), averageCorrection.end(), 0); // НАХОДИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ ВЕКТОРА
-	return sum / averageCorrection.size();										 // ДЕЛИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ НА ИХ КОЛИЧЕСТВО
+	int sum = accumulate(corrections.begin(), corrections.end(), 0); // НАХОДИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ ВЕКТОРА
+	return sum / corrections.size();								 // ДЕЛИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ НА ИХ КОЛИЧЕСТВО
 }
 
 int main()
@@ -113,7 +113,7 @@ int main()
 	SYSTEMTIME tm;
 
 	clock_t c;
-	vector<int> averageCorrection;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
+	vector<int> corrections;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
 	std::unordered_set<string> connected_clients; // СЕТ IP АДРЕСОВ КЛИЕНТОВ, КОТОРЫЕ ПОДКЛЮЧАЛИСЬ К СЕРВЕРУ
 
 	//cout << "Сервер запущен" << endl; // TODO: to rus
@@ -151,6 +151,7 @@ int main()
 			c = clock();//отсчет времени (сколько прошло тиков со старта программы)
 			setsincro.correction = c - getsincro.correction; // ЗНАЧЕНИЕ КОРРЕКЦИИ = ТЕКУЩИЕ ТИКИ СЕРВЕРА - ЗНАЧЕНИЕ ТИКОВ КЛИЕНТА
 			sendto(sS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&client, sizeof(client));
+			cout << "SENDING CORRECTION: " << setsincro.correction << endl;
 
 			char clientIP[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(reinterpret_cast<sockaddr_in*>(&client)->sin_addr), clientIP, INET_ADDRSTRLEN);
@@ -165,8 +166,8 @@ int main()
 				}
 				else
 				{
-					averageCorrection.push_back(setsincro.correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
-					average = setAverageCorrection(averageCorrection); //подсчитываем среднее значение коррекции
+					corrections.push_back(setsincro.correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
+					average = calculateAverageCorrection(corrections); //подсчитываем среднее значение коррекции
 					cout << endl << count << "." << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear
 						<< " " << endl << tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond
 						<< " Seconds " << tm.wMilliseconds << " Milliseconds " << endl << "Correction = " << setsincro.correction
