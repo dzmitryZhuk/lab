@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <ws2tcpip.h>
 #include "Winsock2.h"
 #include "string.h"
@@ -212,6 +212,8 @@ int main()
 
 
 			//нахождение адреса клиента
+			char clientIP[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, &(reinterpret_cast<sockaddr_in*>(&client)->sin_addr), clientIP, INET_ADDRSTRLEN);
 
 			//TODO: to rus
 			//cout << endl << count << "." << " Date and time " << "МЕСЯЦ УКАЗАТЬ" << "/" << "ДЕНЬ УКАЗАТЬ" << "/" << "ГОД УКАЗАТЬ"//
@@ -223,7 +225,7 @@ int main()
 				<< " " << endl << tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond//
 				<< " Seconds " << tm.wMilliseconds << " Milliseconds " << endl << "Correction = " << "CORRECTION"//
 				<< ", Average correction = " << "CORRECTION AVG" << endl;//
-			cout << "Client's adress " << "CLIENT ADDRESS" << endl;//
+			cout << "Client's adress " << clientIP << endl;//
 
 			count++;
 		}
