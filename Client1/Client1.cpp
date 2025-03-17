@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <vector>
+#include <numeric>
 #include <ctime>
 #pragma comment(lib, "WS2_32.lib")
 
@@ -86,6 +88,12 @@ string SetErrorMsgText(string msgText, int code)
 	return msgText + GetErrorMsgText(code);
 };
 
+int calculateAverageCorrection(vector<int>& corrections)
+{
+	int sum = accumulate(corrections.begin(), corrections.end(), 0); // НАХОДИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ ВЕКТОРА
+	return sum / corrections.size();								 // ДЕЛИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ НА ИХ КОЛИЧЕСТВО
+}
+
 int main(int argc, char* argv[])
 {
 	setlocale(LC_CTYPE, "Russian");
@@ -117,7 +125,7 @@ int main(int argc, char* argv[])
 	getsincro.curvalue = 0;
 	auto now = chrono::system_clock::now();
 	getsincro.unique_id = chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-
+	vector<int> corrections;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
 
 	//cout << "Клиент запущен" << endl; // TODO: to rus
 	cout << "Client running" << endl;
@@ -139,7 +147,7 @@ int main(int argc, char* argv[])
 		serv.sin_addr.s_addr = inet_addr(IP.c_str());
 		int maxcor = INT_MIN;
 		int mincor = INT_MAX;
-		int avgcorr = 0;
+		int sum_correction = 0;
 		int lensockaddr = sizeof(serv);
 		sendto(cS, (char*)&getsincro, sizeof(getsincro), 0, (sockaddr*)&serv, sizeof(serv));
 		recvfrom(cS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&serv, &lensockaddr);
@@ -161,13 +169,13 @@ int main(int argc, char* argv[])
 				<< maxcor << "/" << mincor << endl << endl;
 
 			getsincro.curvalue += setsincro.curvalue + Tc; //нахождение текущего значения счетчика времени
-
-			avgcorr += setsincro.curvalue;//нахождение среднего значения коррекции;
+			corrections.push_back(setsincro.curvalue); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
 
 			Sleep(Tc);
 		}
 		//cout << "Средняя коррекция: " << avgcorr / 10 << endl; // TODO: to rus
-		cout << "Avg correction: " << avgcorr / 10 << endl;
+		int average = calculateAverageCorrection(corrections); //подсчитываем среднее значение коррекции
+		cout << "Avg correction: " << average << endl;
 
 		if (closesocket(cS) == SOCKET_ERROR)
 			throw SetErrorMsgText("Closesocket: ", WSAGetLastError());
