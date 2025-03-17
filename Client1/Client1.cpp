@@ -1,4 +1,4 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "Winsock2.h"
 #include <iostream>
 #include <string>
@@ -193,7 +193,7 @@ int main(int argc, char* argv[])
 		if (WSAStartup(MAKEWORD(2, 0), &wsaData) != 0)
 			throw SetErrorMsgText("Startup: ", WSAGetLastError());
 
-		if ((cS = socket(AF_INET, SOCK_DGRAM, NULL)) == INVALID_SOCKET)
+		if ((cS = socket(AF_INET, SOCK_DGRAM, NULL)) == INVALID_SOCKET) // ТУТ ФЛАГ SOCK_DGRAM ЗНАЧИТ ЧТО БУДЕМ ПЕРЕДАВАТЬ ДАННЫЕ ПО UDP
 			throw SetErrorMsgText("Socket: ", WSAGetLastError());
 
 		SOCKADDR_IN serv;
@@ -215,13 +215,13 @@ int main(int argc, char* argv[])
 			sendto(cS, (char*)&getsincro, sizeof(getsincro), 0, (sockaddr*)&serv, sizeof(serv));
 			recvfrom(cS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&serv, &lensockaddr);
 			maxcor = (maxcor < setsincro.curvalue) ? setsincro.curvalue : maxcor;//нахождение максимальной коррекции
-			//mincor = //реализация нахождения минимальной коррекции;
+			mincor = (mincor > setsincro.curvalue) ? setsincro.curvalue : mincor;//нахождение минимальной коррекции
 
-			cout << " Date and time " << "МЕСЯЦ УКАЗАТЬ" << "/" << "ДЕНЬ УКАЗАТЬ" << "/" << "ГОД УКАЗАТЬ" << " " << endl
-				<< "ЧАСЫ УКАЗАТЬ" << " Hours " << "МИНУТЫ УКАЗАТЬ" << " Minutes " << "СЕКУНДЫ УКАЗАТЬ" << " Seconds " << "МИЛЛИСЕКУНДЫ УКАЗАТЬ"
+			cout << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear << " " << endl
+				<< tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond << " Seconds " << tm.wMilliseconds
 				<< " Milliseconds " << endl << tick_number++ << " " << "ПОЛУЧЕННОЕ ТЕКУЩЕЕ ЗНАЧЕНИЕ СИНХРОНИЗАЦИИ УКАЗАТЬ"
-				<< " Correction = " << "УСТАНОВЛЕННОЕ ТЕКУЩЕЕ ЗНАЧЕНИЕ СИНХРОНИЗАЦИИ УКАЗАТЬ" << " Maximum/minimum correction: ";
-				//<< "МАКСИМАЛЬНОЕ ЗНАЧЕНИЕ КОРРЕКЦИИ УКАЗАТЬ" << "/" << "МИНИМАЛЬНОЕ ЗНАЧЕНИЕ КОРРЕКЦИИ УКАЗАТЬ" << endl << endl;
+				<< " Correction = " << "УСТАНОВЛЕННОЕ ТЕКУЩЕЕ ЗНАЧЕНИЕ СИНХРОНИЗАЦИИ УКАЗАТЬ" << " Maximum/minimum correction: "
+				<< maxcor << "/" << mincor << endl << endl;
 
 			//getsincro.curvalue += setsincro.curvalue + Tc; нахождение текущего значения счетчика времени
 
