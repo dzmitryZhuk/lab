@@ -148,11 +148,28 @@ string SetErrorMsgText(string msgText, int code)
 	return msgText + GetErrorMsgText(code);
 };
 
-int main()
+int main(int argc, char* argv[])
 {
 	setlocale(LC_CTYPE, "Russian");
 
-	string IP = "127.0.0.1";//адрес клиента 1
+	string IP = "127.0.0.1";//адрес сервера
+	int PORT = 2000;
+	int Tc = 1000;
+
+	if (argc != 4)
+	{
+		// TODO: to rus
+		// cout << "Должно быть 3 параметра: адрес сервера, порт сервера, значение задержки в тиках" << endl;
+		// cout << "Пример: 192.168.1.3 2000 1000" << endl;
+		cout << "3 parameters\n";
+	}
+	else
+	{
+		IP = argv[1];
+		PORT = atoi(argv[2]);
+		Tc = atoi(argv[3]);
+	}
+
 
 	//int Tc = периодичность клиентского запроса;
 	//int Cc = первоначальное значение счетчика времени;
@@ -181,7 +198,7 @@ int main()
 
 		SOCKADDR_IN serv;
 		serv.sin_family = AF_INET;
-		serv.sin_port = htons(2000);
+		serv.sin_port = htons(PORT); // ПОРТ, КОТОРЫЙ СЛУШАЕТ СЕРВЕР
 		serv.sin_addr.s_addr = inet_addr(IP.c_str());
 		int maxcor = 0;//значение установки коррекции
 		int mincor = INT_MAX;//значение установки коррекции
@@ -210,7 +227,7 @@ int main()
 
 			//avgcorr += нахождение среднего значения коррекции;
 
-			Sleep(1000);
+			Sleep(Tc);
 		}
 		cout << "Средняя коррекция: " << avgcorr / 10 << endl;
 
