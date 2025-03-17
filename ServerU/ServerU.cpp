@@ -228,7 +228,7 @@ int main()
 			//cout << "Client's adress " << "АДРЕС КЛИЕНТА УКАЗАТЬ" << endl;//
 			cout << endl << count << "." << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear//
 				<< " " << endl << tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond//
-				<< " Seconds " << tm.wMilliseconds << " Milliseconds " << endl << "Correction = " << "CORRECTION"//
+				<< " Seconds " << tm.wMilliseconds << " Milliseconds " << endl << "Correction = " << setsincro.correction//
 				<< ", Average correction = " << average << endl;//
 			cout << "Client's adress " << clientIP << endl;//
 
