@@ -219,17 +219,18 @@ int main(int argc, char* argv[])
 
 			cout << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear << " " << endl
 				<< tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond << " Seconds " << tm.wMilliseconds
-				<< " Milliseconds " << endl << tick_number++ << " " << "ПОЛУЧЕННОЕ ТЕКУЩЕЕ ЗНАЧЕНИЕ СИНХРОНИЗАЦИИ УКАЗАТЬ"
-				<< " Correction = " << "УСТАНОВЛЕННОЕ ТЕКУЩЕЕ ЗНАЧЕНИЕ СИНХРОНИЗАЦИИ УКАЗАТЬ" << " Maximum/minimum correction: "
+				<< " Milliseconds " << endl << tick_number++ << " " << getsincro.curvalue
+				<< " Correction = " << setsincro.curvalue << " Maximum/minimum correction: "
 				<< maxcor << "/" << mincor << endl << endl;
 
-			//getsincro.curvalue += setsincro.curvalue + Tc; нахождение текущего значения счетчика времени
+			getsincro.curvalue += setsincro.curvalue + Tc; //нахождение текущего значения счетчика времени
 
-			//avgcorr += нахождение среднего значения коррекции;
+			avgcorr += setsincro.curvalue;//нахождение среднего значения коррекции;
 
 			Sleep(Tc);
 		}
-		cout << "Средняя коррекция: " << avgcorr / 10 << endl;
+		//cout << "Средняя коррекция: " << avgcorr / 10 << endl; // TODO: to rus
+		cout << "Avg correction: " << avgcorr / 10 << endl;
 
 		if (closesocket(cS) == SOCKET_ERROR)
 			throw SetErrorMsgText("Closesocket: ", WSAGetLastError());
