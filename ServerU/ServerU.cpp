@@ -1,5 +1,6 @@
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
+#include <unordered_set>
 #include <numeric>
 #include <ws2tcpip.h>
 #include "Winsock2.h"
@@ -174,6 +175,7 @@ int main()
 
 	clock_t c;
 	vector<int> averageCorrection;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
+	std::unordered_set<string> connected_clients; // СЕТ IP АДРЕСОВ КЛИЕНТОВ, КОТОРЫЕ ПОДКЛЮЧАЛИСЬ К СЕРВЕРУ
 
 	//cout << "Сервер запущен" << endl; // TODO: to rus
 	cout << "Server running" << endl;
@@ -209,12 +211,21 @@ int main()
 			recvfrom(sS, (char*)&getsincro, sizeof(getsincro), NULL, (sockaddr*)&client, &lc);
 			c = clock();//отсчет времени (сколько прошло тиков со старта программы)
 			setsincro.correction = c - getsincro.correction; // ЗНАЧЕНИЕ КОРРЕКЦИИ = ТЕКУЩИЕ ТИКИ СЕРВЕРА - ЗНАЧЕНИЕ ТИКОВ КЛИЕНТА
-			averageCorrection.push_back(setsincro.correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
-			average = setAverageCorrection(averageCorrection);
 			sendto(sS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&client, sizeof(client));
 
 			char clientIP[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(reinterpret_cast<sockaddr_in*>(&client)->sin_addr), clientIP, INET_ADDRSTRLEN);
+			if (connected_clients.find(string(clientIP)) == connected_clients.end()) // если клиент с IP адресом clientIP еще не подключался:
+																					 // тогда не нужно эту коррекцию учитывать при подсчете
+																					 // просто запоминаем IP адрес, чтобы дальше учитывали его при подсчете коррекции
+			{
+				connected_clients.insert(string(clientIP));
+			}
+			else
+			{
+				averageCorrection.push_back(setsincro.correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
+				average = setAverageCorrection(averageCorrection);
+			}
 
 			cout << endl << count << "." << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear//
 				<< " " << endl << tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond//
