@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
 #include <numeric>
 #include <ws2tcpip.h>
@@ -13,10 +13,10 @@
 using namespace std;
 
 
-struct SETSINCRO//запрос клиента на синхронизацию счетчика времени
+struct SETSINCRO
 {
-	string cmd; //значения SINC
-	int correction; //текущее значение счетчика времени
+	string cmd;
+	int correction;
 };
 
 //TODO: to rus
@@ -156,7 +156,6 @@ string SetErrorMsgText(string msgText, int code)
 
 int setAverageCorrection(vector<int> &averageCorrection)
 {
-//реализация нахождения средней коррекции
 	int sum = accumulate(averageCorrection.begin(), averageCorrection.end(), 0); // НАХОДИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ ВЕКТОРА
 	return sum / averageCorrection.size();										 // ДЕЛИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ НА ИХ КОЛИЧЕСТВО
 }
@@ -165,15 +164,15 @@ int main()
 {
 	setlocale(LC_ALL, "Russian");
 
-	SETSINCRO setsincro, getsincro;//значения установки 
+	SETSINCRO setsincro, getsincro;
 	ZeroMemory(&setsincro, sizeof(setsincro));
 	ZeroMemory(&getsincro, sizeof(getsincro));
 
-	setsincro.cmd = "SINCRO";//начальная установка из структуры
-	setsincro.correction = 0;//начальная установка из структуры
-	SYSTEMTIME tm;//получение системного времени
+	setsincro.cmd = "SINCRO";
+	setsincro.correction = 0;
+	SYSTEMTIME tm;
 
-	clock_t c;//время работы сервера с момента запуска
+	clock_t c;
 	vector<int> averageCorrection;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
 
 	//cout << "Сервер запущен" << endl; // TODO: to rus
@@ -199,33 +198,24 @@ int main()
 		if (bind(sS, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR)
 			throw SetErrorMsgText("Bind_Server: ", WSAGetLastError());
 
-		int count = 1;//какой по счету эксперимент
+		int count = 1;
 
 		while (true)
 		{
 			SOCKADDR_IN client;
 			int lc = sizeof(client);
-			int average = 0;//первоначальное среднее значение коррекции
+			int average = 0;
 			GetSystemTime(&tm);
 			recvfrom(sS, (char*)&getsincro, sizeof(getsincro), NULL, (sockaddr*)&client, &lc);
-			c = clock();//отсчет времени
+			c = clock();//отсчет времени (сколько прошло тиков со старта программы)
 			setsincro.correction = c - getsincro.correction; // ЗНАЧЕНИЕ КОРРЕКЦИИ = ТЕКУЩИЕ ТИКИ СЕРВЕРА - ЗНАЧЕНИЕ ТИКОВ КЛИЕНТА
-			//реализация получения значения средней коррекции в одном эксперименте;
 			averageCorrection.push_back(setsincro.correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
-			average = setAverageCorrection(averageCorrection);//реализация получения значения средней коррекции за все эксперименты;
+			average = setAverageCorrection(averageCorrection);
 			sendto(sS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&client, sizeof(client));
 
-
-			//нахождение адреса клиента
 			char clientIP[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(reinterpret_cast<sockaddr_in*>(&client)->sin_addr), clientIP, INET_ADDRSTRLEN);
 
-			//TODO: to rus
-			//cout << endl << count << "." << " Date and time " << "МЕСЯЦ УКАЗАТЬ" << "/" << "ДЕНЬ УКАЗАТЬ" << "/" << "ГОД УКАЗАТЬ"//
-			//	<< " " << endl << "ЧАСЫ УКАЗАТЬ" << " Hours " << "МИНУТЫ УКАЗАТЬ" << " Minutes " << "СЕКУНДЫ УКАЗАТЬ"//
-			//	<< " Seconds " << "МИЛЛИСЕКУНДЫ УКАЗАТЬ" << " Milliseconds " << endl << "Correction = " << "КОРРЕКЦИЮ УКАЗАТЬ"//
-			//	<< ", Average correction = " << "СРЕДНЮЮ КОРРЕКЦИЮ УКАЗАТЬ" << endl;//
-			//cout << "Client's adress " << "АДРЕС КЛИЕНТА УКАЗАТЬ" << endl;//
 			cout << endl << count << "." << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear//
 				<< " " << endl << tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond//
 				<< " Seconds " << tm.wMilliseconds << " Milliseconds " << endl << "Correction = " << setsincro.correction//

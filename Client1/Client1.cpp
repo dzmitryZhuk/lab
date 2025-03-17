@@ -1,4 +1,4 @@
-﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "Winsock2.h"
 #include <iostream>
 #include <string>
@@ -171,15 +171,12 @@ int main(int argc, char* argv[])
 	}
 
 
-	//int Tc = периодичность клиентского запроса;
-	//int Cc = первоначальное значение счетчика времени;
-
-	SYSTEMTIME tm;//получение системного времени
+	SYSTEMTIME tm;
 	GETSINCHRO getsincro, setsincro;
 	ZeroMemory(&setsincro, sizeof(setsincro));
 	ZeroMemory(&getsincro, sizeof(getsincro));
-	getsincro.cmd = "SINC";//первоначальные установки
-	getsincro.curvalue = 0;//первоначальные установки
+	getsincro.cmd = "SINC";
+	getsincro.curvalue = 0;
 
 
 	//cout << "Клиент запущен" << endl; // TODO: to rus
@@ -200,15 +197,15 @@ int main(int argc, char* argv[])
 		serv.sin_family = AF_INET;
 		serv.sin_port = htons(PORT); // ПОРТ, КОТОРЫЙ СЛУШАЕТ СЕРВЕР
 		serv.sin_addr.s_addr = inet_addr(IP.c_str());
-		int maxcor = 0;//значение установки коррекции
-		int mincor = INT_MAX;//значение установки коррекции
-		int avgcorr = 0;//значение установки коррекции
+		int maxcor = INT_MIN;
+		int mincor = INT_MAX;
+		int avgcorr = 0;
 		int lensockaddr = sizeof(serv);
 		sendto(cS, (char*)&getsincro, sizeof(getsincro), 0, (sockaddr*)&serv, sizeof(serv));
 		recvfrom(cS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&serv, &lensockaddr);
 		getsincro.curvalue += setsincro.curvalue;//получение текущего значения расхождения времени
 
-		int  tick_number = 1;//первый эксперимент
+		int  tick_number = 1;
 		while (tick_number < 11)
 		{
 			GetSystemTime(&tm);
