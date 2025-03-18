@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
             maxcor = (maxcor < correction) ? correction : maxcor;//нахождение максимальной коррекции
 			mincor = (mincor > correction) ? correction : mincor;//нахождение минимальной коррекции
             cout << "Correction = " << correction << ", min = " << mincor << ", max = " << maxcor << endl;
-            corrections.push_back(setsincro.correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
+            corrections.push_back(correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
             int average = calculateAverageCorrection(corrections); //подсчитываем среднее значение коррекции
             cout << "Average correction = " << average << endl;
 
