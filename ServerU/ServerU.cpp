@@ -148,7 +148,9 @@ int main()
 			int lc = sizeof(client);
 			int average = 0;
 			// ожидаем данные от клиентов на сокете
-			recvfrom(sS, (char*)&getsincro, sizeof(getsincro), NULL, (sockaddr*)&client, &lc); // получаем данные от клиента
+			recvfrom(sS, (char*)&getsincro, sizeof(getsincro), NULL, (sockaddr*)&client, &lc); // получаем данные от клиента:
+			// в переменной getsincro находится значение времени клиента, которе нужно синхронизировать. и его уникальный идентификатор
+			// в переменной client находится ip адрес этого клиента, который прочитаем позже
 			GetSystemTime(&tm);
 			c = clock(); // отсчет времени (сколько прошло тиков со старта программы)
 			setsincro.correction = c - getsincro.correction; // ЗНАЧЕНИЕ КОРРЕКЦИИ = ТЕКУЩИЕ ТИКИ СЕРВЕРА - ЗНАЧЕНИЕ ТИКОВ КЛИЕНТА (так считаем коррекцию согласно заданию)
