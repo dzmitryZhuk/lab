@@ -124,6 +124,8 @@ int main(int argc, char* argv[]) {
     serverAddr.sin_addr.s_addr = inet_addr(IP.c_str());
 
     try {
+        int maxcor = INT_MIN;
+		int mincor = INT_MAX;
         int tick_number = 1;
         while (tick_number < 11) {
             cout << "Sending NTP request to server..." << endl;
@@ -133,7 +135,9 @@ int main(int argc, char* argv[]) {
             cout << "Getting NTP response from server..." << endl;
             auto response = receiveNtpResponse(sock);
             auto correction = calculateCorrection(response, t0);
-            cout << "Correction = " << correction << endl;
+            maxcor = (maxcor < correction) ? correction : maxcor;//нахождение максимальной коррекции
+			mincor = (mincor > correction) ? correction : mincor;//нахождение минимальной коррекции
+            cout << "Correction = " << correction << ", min = " << mincor << ", max = " << maxcor << endl;
 
             Sleep(Tc);
             tick_number++;
