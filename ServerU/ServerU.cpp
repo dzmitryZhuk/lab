@@ -109,15 +109,14 @@ int main()
 
 	setsincro.cmd = "SINCRO";
 	setsincro.correction = 0;
-	setsincro.unique_id = 0;
+	setsincro.unique_id = 0; // эта переменная нужна для уникального id клиента, будем читать ее из тех данных, которые отправляет клиент
 	SYSTEMTIME tm;
 
 	clock_t c;
-	vector<int> corrections;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
-	std::unordered_set<string> connected_clients; // СЕТ IP АДРЕСОВ КЛИЕНТОВ, КОТОРЫЕ ПОДКЛЮЧАЛИСЬ К СЕРВЕРУ
+	vector<int> corrections; // вектор всех коррекций, которые отправляем клиентам
+	std::unordered_set<string> connected_clients; // набор уникальных подключений клиентов
 
-	//cout << "Сервер запущен" << endl; // TODO: to rus
-	cout << "Server running" << endl;
+	cout << "Сервер запущен" << endl;
 
 	try
 	{
@@ -131,11 +130,13 @@ int main()
 		if ((sS = socket(AF_INET, SOCK_DGRAM, NULL)) == INVALID_SOCKET) // ТУТ ФЛАГ SOCK_DGRAM ЗНАЧИТ ЧТО БУДЕМ ПЕРЕДАВАТЬ ДАННЫЕ ПО UDP
 			throw SetErrorMsgText("Socket: ", WSAGetLastError());
 
+		// инициализируем данные для сокета
 		SOCKADDR_IN serv;
 		serv.sin_family = AF_INET;
-		serv.sin_port = htons(2000);// ПОРТ, КОТОРЫЙ СЛУШАЕТ СЕРВЕР
+		serv.sin_port = htons(2000); // порт, который прослушиваем. на этот порт должны отправлять данные клиенты
 		serv.sin_addr.s_addr = INADDR_ANY;
 
+		// связываем сокет с данными, которые инициализировали выше
 		if (bind(sS, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR)
 			throw SetErrorMsgText("Bind_Server: ", WSAGetLastError());
 
@@ -146,15 +147,16 @@ int main()
 			SOCKADDR_IN client;
 			int lc = sizeof(client);
 			int average = 0;
-			recvfrom(sS, (char*)&getsincro, sizeof(getsincro), NULL, (sockaddr*)&client, &lc);
+			// ожидаем данные от клиентов на сокете
+			recvfrom(sS, (char*)&getsincro, sizeof(getsincro), NULL, (sockaddr*)&client, &lc); // получаем данные от клиента
 			GetSystemTime(&tm);
-			c = clock();//отсчет времени (сколько прошло тиков со старта программы)
-			setsincro.correction = c - getsincro.correction; // ЗНАЧЕНИЕ КОРРЕКЦИИ = ТЕКУЩИЕ ТИКИ СЕРВЕРА - ЗНАЧЕНИЕ ТИКОВ КЛИЕНТА
-			sendto(sS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&client, sizeof(client));
+			c = clock(); // отсчет времени (сколько прошло тиков со старта программы)
+			setsincro.correction = c - getsincro.correction; // ЗНАЧЕНИЕ КОРРЕКЦИИ = ТЕКУЩИЕ ТИКИ СЕРВЕРА - ЗНАЧЕНИЕ ТИКОВ КЛИЕНТА (так считаем коррекцию согласно заданию)
+			sendto(sS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&client, sizeof(client)); // отправляем данные обратно клиенту
 			cout << "SENDING CORRECTION: " << setsincro.correction << endl;
 
 			char clientIP[INET_ADDRSTRLEN];
-			inet_ntop(AF_INET, &(reinterpret_cast<sockaddr_in*>(&client)->sin_addr), clientIP, INET_ADDRSTRLEN);
+			inet_ntop(AF_INET, &(reinterpret_cast<sockaddr_in*>(&client)->sin_addr), clientIP, INET_ADDRSTRLEN); // с помощью функции inet_ntop получаем ip адрес клиента, сам адрес хранится изначально в поле (&client)->sin_addr
 			{
 				string client_id = clientIP;
 				client_id += to_string(getsincro.unique_id);
