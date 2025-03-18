@@ -2,6 +2,8 @@
 #include <winsock2.h>
 #include <iostream>
 #include <string>
+#include <numeric>
+#include <vector>
 #include <chrono>
 #pragma comment(lib, "WS2_32.lib")
 
@@ -86,6 +88,12 @@ time_t calculateCorrection(const NtpPacket& response, time_t t0) {
     return res;
 }
 
+int calculateAverageCorrection(vector<int> &corrections)
+{
+	int sum = accumulate(corrections.begin(), corrections.end(), 0); // НАХОДИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ ВЕКТОРА
+	return sum / corrections.size();								 // ДЕЛИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ НА ИХ КОЛИЧЕСТВО
+}
+
 int main(int argc, char* argv[]) {
     setlocale(LC_CTYPE, "Russian");
 
@@ -123,6 +131,8 @@ int main(int argc, char* argv[]) {
     serverAddr.sin_port = htons(PORT);
     serverAddr.sin_addr.s_addr = inet_addr(IP.c_str());
 
+    vector<int> corrections;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
+
     try {
         int maxcor = INT_MIN;
 		int mincor = INT_MAX;
@@ -138,6 +148,9 @@ int main(int argc, char* argv[]) {
             maxcor = (maxcor < correction) ? correction : maxcor;//нахождение максимальной коррекции
 			mincor = (mincor > correction) ? correction : mincor;//нахождение минимальной коррекции
             cout << "Correction = " << correction << ", min = " << mincor << ", max = " << maxcor << endl;
+            corrections.push_back(setsincro.correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
+            int average = calculateAverageCorrection(corrections); //подсчитываем среднее значение коррекции
+            cout << "Average correction = " << average << endl;
 
             Sleep(Tc);
             tick_number++;
