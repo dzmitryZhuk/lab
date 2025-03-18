@@ -132,6 +132,7 @@ int main(int argc, char* argv[]) {
     serverAddr.sin_addr.s_addr = inet_addr(IP.c_str());
 
     vector<int> corrections;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
+    SYSTEMTIME tm;
 
     try {
         int maxcor = INT_MIN;
@@ -144,17 +145,26 @@ int main(int argc, char* argv[]) {
             // получаем ответ от ntp сервера
             cout << "Getting NTP response from server..." << endl;
             auto response = receiveNtpResponse(sock);
+
+            GetSystemTime(&tm);
             auto correction = calculateCorrection(response, t0);
             maxcor = (maxcor < correction) ? correction : maxcor;//нахождение максимальной коррекции
 			mincor = (mincor > correction) ? correction : mincor;//нахождение минимальной коррекции
-            cout << "Correction = " << correction << ", min = " << mincor << ", max = " << maxcor << endl;
+
+            cout << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear << " " << endl
+				<< tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond << " Seconds " << tm.wMilliseconds
+				<< " Milliseconds " << endl << tick_number++ << endl
+				<< " Correction = " << correction << " Maximum/minimum correction: "
+				<< maxcor << "/" << mincor << endl << endl;
+
             corrections.push_back(correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
-            int average = calculateAverageCorrection(corrections); //подсчитываем среднее значение коррекции
-            cout << "Average correction = " << average << endl;
 
             Sleep(Tc);
             tick_number++;
         }
+
+        int average = calculateAverageCorrection(corrections); //подсчитываем среднее значение коррекции
+        cout << "Average correction = " << average << endl;
     }
     catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
