@@ -98,16 +98,17 @@ int main(int argc, char* argv[])
 {
 	setlocale(LC_CTYPE, "Russian");
 
-	string IP = "127.0.0.1";
-	int PORT = 2000;
-	int Tc = 1000;
+	// переменные для работы клиента
+	// эти переменные дальше будут читаться из параметров командной строки
+	string IP = "127.0.0.1"; // IP сервера
+	int PORT = 2000; // порт, который сервер прослушивает
+	int Tc = 1000; ; // задержка отправки запросов на сервер
 
+	// чтение переменных из параметров командной строки
 	if (argc != 4)
 	{
-		// TODO: to rus
-		// cout << "Должно быть 3 параметра: адрес сервера, порт сервера, значение задержки в тиках" << endl;
-		// cout << "Пример: 192.168.1.3 2000 1000" << endl;
-		cout << "3 parameters must be\n";
+		cout << "Должно быть 3 параметра: адрес сервера, порт сервера, значение задержки в тиках" << endl;
+		cout << "Пример: 192.168.1.3 2000 1000" << endl;
 		return 0;
 	}
 	else
@@ -116,6 +117,7 @@ int main(int argc, char* argv[])
 		PORT = atoi(argv[2]);
 		Tc = atoi(argv[3]);
 	}
+	////////////////////////////////////////////////////
 
 
 	SYSTEMTIME tm;
@@ -124,12 +126,11 @@ int main(int argc, char* argv[])
 	ZeroMemory(&getsincro, sizeof(getsincro));
 	getsincro.cmd = "SINC";
 	getsincro.curvalue = 0;
-	auto now = chrono::system_clock::now();
-	getsincro.unique_id = chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-	vector<int> corrections;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
+	auto now = chrono::system_clock::now();	// эта переменная нужна для уникального id клиента
+	getsincro.unique_id = chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count(); // узнаем сколько миллисекунд прошло с 1 января 1900 00:00 (time_since_epoch())
+	vector<int> corrections; // вектор всех коррекций, которые присылает сервер
 
-	//cout << "Клиент запущен" << endl; // TODO: to rus
-	cout << "Client running" << endl;
+	cout << "Клиент запущен" << endl;
 
 	try
 	{
@@ -144,24 +145,26 @@ int main(int argc, char* argv[])
 
 		SOCKADDR_IN serv;
 		serv.sin_family = AF_INET;
-		serv.sin_port = htons(PORT); // ПОРТ, КОТОРЫЙ СЛУШАЕТ СЕРВЕР
-		serv.sin_addr.s_addr = inet_addr(IP.c_str());
-		int maxcor = INT_MIN;
-		int mincor = INT_MAX;
+		serv.sin_port = htons(PORT); // указываем порт, который прослушивает сервер
+		serv.sin_addr.s_addr = inet_addr(IP.c_str()); // указываем ip адрес сервера
+		int maxcor = INT_MIN; // переменная, в которой будет записана максимальная коррекция, которая пришла с сервера
+		int mincor = INT_MAX; // переменная, в которой будет записана минимальная коррекция, которая пришла с сервера
 		int sum_correction = 0;
 		int lensockaddr = sizeof(serv);
-		sendto(cS, (char*)&getsincro, sizeof(getsincro), 0, (sockaddr*)&serv, sizeof(serv));
-		recvfrom(cS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&serv, &lensockaddr);
-		getsincro.curvalue += setsincro.curvalue;//получение текущего значения расхождения времени
+		sendto(cS, (char*)&getsincro, sizeof(getsincro), 0, (sockaddr*)&serv, sizeof(serv)); // отправка запроса на сервер
+		// сервер обрабатывает запрос и отправляет ответ, этот ответ какое-то время идет обратно
+		recvfrom(cS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&serv, &lensockaddr); // получение ответа от сервера
+		getsincro.curvalue += setsincro.curvalue; // получение текущего значения расхождения времени
 
 		int  tick_number = 1;
 		while (tick_number < 11)
 		{
 			GetSystemTime(&tm);
-			sendto(cS, (char*)&getsincro, sizeof(getsincro), 0, (sockaddr*)&serv, sizeof(serv));
-			recvfrom(cS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&serv, &lensockaddr);
-			maxcor = (maxcor < setsincro.curvalue) ? setsincro.curvalue : maxcor;//нахождение максимальной коррекции
-			mincor = (mincor > setsincro.curvalue) ? setsincro.curvalue : mincor;//нахождение минимальной коррекции
+			sendto(cS, (char*)&getsincro, sizeof(getsincro), 0, (sockaddr*)&serv, sizeof(serv)); // отправка запроса на сервер
+			// сервер обрабатывает запрос и отправляет ответ, этот ответ какое-то время идет обратно
+			recvfrom(cS, (char*)&setsincro, sizeof(setsincro), 0, (sockaddr*)&serv, &lensockaddr); // получение ответа от сервера
+			maxcor = (maxcor < setsincro.curvalue) ? setsincro.curvalue : maxcor; // нахождение максимальной коррекции
+			mincor = (mincor > setsincro.curvalue) ? setsincro.curvalue : mincor; // нахождение минимальной коррекции
 
 			cout << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear << " " << endl
 				<< tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond << " Seconds " << tm.wMilliseconds
@@ -169,14 +172,13 @@ int main(int argc, char* argv[])
 				<< " Correction = " << setsincro.curvalue << " Maximum/minimum correction: "
 				<< maxcor << "/" << mincor << endl << endl;
 
-			getsincro.curvalue += setsincro.curvalue + Tc; //нахождение текущего значения счетчика времени
-			corrections.push_back(setsincro.curvalue); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
+			getsincro.curvalue += setsincro.curvalue + Tc; // нахождение текущего значения счетчика времени (будет отправлен в следующий раз на сервер для коррекции)
+			corrections.push_back(setsincro.curvalue); // запоминаем текущую коррекцию, чтобы потом подсчитать среднюю
 
 			Sleep(Tc);
 		}
-		//cout << "Средняя коррекция: " << avgcorr / 10 << endl; // TODO: to rus
 		int average = calculateAverageCorrection(corrections); //подсчитываем среднее значение коррекции
-		cout << "Avg correction: " << average << endl;
+		cout << "Средняя коррекция: " << average << endl;
 
 		if (closesocket(cS) == SOCKET_ERROR)
 			throw SetErrorMsgText("Closesocket: ", WSAGetLastError());
