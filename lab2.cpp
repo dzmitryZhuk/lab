@@ -188,7 +188,7 @@ int main(int argc, char* argv[]) {
             maxcor = (maxcor < correction) ? correction : maxcor;//нахождение максимальной коррекции
 			mincor = (mincor > correction) ? correction : mincor;//нахождение минимальной коррекции
             cout << "Max/min: " << maxcor << "ms / " << mincor << "ms" << endl;
-            cout << "Average correction = " << calculateAverageCorrection(corrections) << endl << endl;
+            cout << "Average difference = " << calculateAverageCorrection(corrections) << endl << endl;
 
 
             Sleep(Tc);
