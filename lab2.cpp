@@ -103,6 +103,12 @@ time_t calculateDefferenceNtpCurrent(SYSTEMTIME ntp, SYSTEMTIME current)
     return res;
 }
 
+int calculateAverageCorrection(vector<time_t> &corrections)
+{
+	int sum = accumulate(corrections.begin(), corrections.end(), 0); // НАХОДИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ ВЕКТОРА
+	return (float)sum / (float)corrections.size();					 // ДЕЛИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ НА ИХ КОЛИЧЕСТВО
+}
+
 int main(int argc, char* argv[]) {
     setlocale(LC_CTYPE, "Russian");
 
@@ -139,6 +145,9 @@ int main(int argc, char* argv[]) {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(PORT);
     serverAddr.sin_addr.s_addr = inet_addr(IP.c_str());
+    vector<time_t> corrections;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
+    int maxcor = INT_MIN;
+    int mincor = INT_MAX;
 
     try {
         int tick_number = 1;
@@ -172,7 +181,14 @@ int main(int argc, char* argv[]) {
             snprintf(buff, sizeof(buff), "[%04d/%02d/%02d %02d:%02d:%02d.%03d]", tm_NTP.wYear, tm_NTP.wMonth, tm_NTP.wDay, tm_NTP.wHour, tm_NTP.wMinute, tm_NTP.wSecond, tm_NTP.wMilliseconds);
             cout << buff << " NTP server timestamp" << endl;
             /////////////////////////////////////////////////////////////////////////////////
-            cout << "Difference between current time and NTP: " << calculateDefferenceNtpCurrent(tm_NTP, tm_current) << " ms" << endl << endl;
+            auto correction = calculateDefferenceNtpCurrent(tm_NTP, tm_current);
+            cout << "Difference between current time and NTP: " << correction << " ms" << endl;
+
+            corrections.push_back(correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
+            maxcor = (maxcor < correction) ? correction : maxcor;//нахождение максимальной коррекции
+			mincor = (mincor > correction) ? correction : mincor;//нахождение минимальной коррекции
+            cout << "Max/min: " << maxcor << "ms / " << mincor << "ms" << endl;
+            cout << "Average correction = " << calculateAverageCorrection(corrections) << endl << endl;
 
 
             Sleep(Tc);
