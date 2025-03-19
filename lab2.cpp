@@ -67,8 +67,8 @@ SYSTEMTIME getDateTimeFromNtp(const uint32_t ntp_time[2])
     SYSTEMTIME tm = {0};
 
     // извлекаем целую часть секунд из NTP-времени
-    uint32_t seconds = ntp_time[0];
-    uint32_t fraction = ntp_time[1];
+    uint32_t seconds = ntohl(ntp_time[0]);
+    uint32_t fraction = ntohl(ntp_time[1]);
 
     // переводим NTP-время в windows/unix время
     time_t actual_time = static_cast<time_t>(seconds - NTP_TIMESTAMP_DELTA);
@@ -150,20 +150,28 @@ int main(int argc, char* argv[]) {
             cout << "Getting NTP response from server..." << endl;
             auto response = receiveNtpResponse(sock);
 
+            // получаем отметки времени локального устройства и сервера и выводим их в консоль
             SYSTEMTIME tm_current, tm_NTP;
-            GetSystemTime(&tm_current);
+            GetSystemTime(&tm_current); // tm_current сейчас в UTC формате времени, преобразуем в локальное время (например для РБ локалькое время = UTC+3)
+            // преобразуем SYSTEMTIME в FILETIME
+            FILETIME utc_filetime;
+            SystemTimeToFileTime(&tm_current, &utc_filetime);
+            // преобразуем FILETIME обратно в SYSTEMTIME, но уже в локальное время
+            FileTimeToLocalFileTime(&utc_filetime, &utc_filetime);
+            FileTimeToSystemTime(&utc_filetime, &tm_current);
 
             char buff[128]; // буффер для вывода отметки времени в консоль
             // заполняем буффер данными в таком формате [2025/01/17 08:18:16.569]
             // ТЕКУЩЕЕ ВРЕМЯ НА УСТРОЙСТВЕ
-            snprintf(buff, sizeof(buff), "[%4d/%2d/%2d %2d:%2d:%2d.%3d]", tm_current.wYear, tm_current.wMonth, tm_current.wDay, tm_current.wHour, tm_current.wMinute, tm_current.wSecond, tm_current.wMilliseconds);
+            snprintf(buff, sizeof(buff), "[%04d/%02d/%02d %02d:%02d:%02d.%03d]", tm_current.wYear, tm_current.wMonth, tm_current.wDay, tm_current.wHour, tm_current.wMinute, tm_current.wSecond, tm_current.wMilliseconds);
             cout << buff << " current machine timestamp" << endl;
 
             tm_NTP = getDateTimeFromNtp(response.t2_timestamp);
             // заполняем буффер данными в таком формате [2025/01/17 08:18:16.569]
             // ВРЕМЯ NTP СЕРВЕРЕ
-            snprintf(buff, sizeof(buff), "[%4d/%2d/%2d %2d:%2d:%2d.%3d]", tm_NTP.wYear, tm_NTP.wMonth, tm_NTP.wDay, tm_NTP.wHour, tm_NTP.wMinute, tm_NTP.wSecond, tm_NTP.wMilliseconds);
+            snprintf(buff, sizeof(buff), "[%04d/%02d/%02d %02d:%02d:%02d.%03d]", tm_NTP.wYear, tm_NTP.wMonth, tm_NTP.wDay, tm_NTP.wHour, tm_NTP.wMinute, tm_NTP.wSecond, tm_NTP.wMilliseconds);
             cout << buff << " NTP server timestamp" << endl;
+            /////////////////////////////////////////////////////////////////////////////////
             cout << "Difference between current time and NTP: " << calculateDefferenceNtpCurrent(tm_NTP, tm_current) << " ms" << endl << endl;
 
 
