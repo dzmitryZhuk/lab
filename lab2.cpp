@@ -1,4 +1,5 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <winsock2.h>
 #include <iostream>
 #include <string>
@@ -60,38 +61,46 @@ NtpPacket receiveNtpResponse(SOCKET sock) {
     return packet;
 }
 
-// функция для подсчета коррекции
-time_t calculateCorrection(const NtpPacket& response, time_t t0) {
+// функция для преобразования NTP-времени в SYSTEMTIME
+SYSTEMTIME getDateTimeFromNtp(const uint32_t ntp_time[2])
+{
+    SYSTEMTIME tm = {0};
 
-    // лямбда функция для подсчета временной отметки. считаем из времени формата NTP
-    auto getTimeFromNtpTime = [](const uint32_t timestamp[2]) -> time_t {
-        // извлекаем временную метку
-        uint32_t seconds = ntohl(timestamp[0]);
-        uint32_t fraction = ntohl(timestamp[1]); // fraction - дробная часть секунды по стандарту NTP
+    // извлекаем целую часть секунд из NTP-времени
+    uint32_t seconds = ntp_time[0];
+    uint32_t fraction = ntp_time[1];
 
-        // преобразуем в привычное время (в миллисекундах)
-        uint64_t res = ((uint64_t)seconds - NTP_TIMESTAMP_DELTA) * 1000;
-        uint64_t ms_fraction = ((uint64_t)fraction * (uint64_t)1000) / 0x100000000LL;
-        res += ms_fraction;
+    // переводим NTP-время в windows/unix время
+    time_t actual_time = static_cast<time_t>(seconds - NTP_TIMESTAMP_DELTA);
 
-        return res;
-    };
-    /////////////////////////////////////////////////////////////////////////////////
+    // преобразуем windows/unix время в локальное время
+    struct tm* local_time = localtime(&actual_time);
+    if (!local_time)
+        return tm;
 
-    auto now = std::chrono::system_clock::now();
-    time_t t3 = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-    time_t t1 = getTimeFromNtpTime(response.t1_timestamp);
-    time_t t2 = getTimeFromNtpTime(response.t2_timestamp);
+    // заполняем структуру SYSTEMTIME
+    tm.wYear = static_cast<WORD>(local_time->tm_year + 1900); // год
+    tm.wMonth = static_cast<WORD>(local_time->tm_mon + 1);    // месяц (1-12)
+    tm.wDay = static_cast<WORD>(local_time->tm_mday);         // день месяца
+    tm.wHour = static_cast<WORD>(local_time->tm_hour);        // часы
+    tm.wMinute = static_cast<WORD>(local_time->tm_min);       // минуты
+    tm.wSecond = static_cast<WORD>(local_time->tm_sec);       // секунды
 
-    auto res = ((t1 - t0) + (t2 - t3)) / 2; // считаем коррекцию по формуле -> https://en.wikipedia.org/wiki/Network_Time_Protocol#Clock_synchronization_algorithm
+    // вычисляем миллисекунды из дробной части NTP-времени
+    uint32_t milliseconds = static_cast<uint32_t>(((uint64_t)fraction * 1000ULL) / 0x100000000LL);
+    tm.wMilliseconds = static_cast<WORD>(milliseconds);
 
-    return res;
+    return tm;
 }
 
-int calculateAverageCorrection(vector<int> &corrections)
+// функция подсчета разницы времени NTP сервера и текущего устройства, возвращает разницу в миллисекундах
+time_t calculateDefferenceNtpCurrent(SYSTEMTIME ntp, SYSTEMTIME current)
 {
-	int sum = accumulate(corrections.begin(), corrections.end(), 0); // НАХОДИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ ВЕКТОРА
-	return sum / corrections.size();								 // ДЕЛИМ СУММУ ВСЕХ ЭЛЕМЕНТОВ НА ИХ КОЛИЧЕСТВО
+    time_t res = 0;
+    res += ntp.wMilliseconds - current.wMilliseconds;
+    res += 1000 * (ntp.wSecond - current.wSecond);
+    res += 60 * 1000 * (ntp.wMinute - current.wMinute);
+    return res;
 }
 
 int main(int argc, char* argv[]) {
@@ -131,12 +140,7 @@ int main(int argc, char* argv[]) {
     serverAddr.sin_port = htons(PORT);
     serverAddr.sin_addr.s_addr = inet_addr(IP.c_str());
 
-    vector<int> corrections;//ВЕКТОР ВСЕХ КОРРЕКЦИЙ
-    SYSTEMTIME tm;
-
     try {
-        int maxcor = INT_MIN;
-		int mincor = INT_MAX;
         int tick_number = 1;
         while (tick_number < 11) {
             cout << "Sending NTP request to server..." << endl;
@@ -146,25 +150,26 @@ int main(int argc, char* argv[]) {
             cout << "Getting NTP response from server..." << endl;
             auto response = receiveNtpResponse(sock);
 
-            GetSystemTime(&tm);
-            auto correction = calculateCorrection(response, t0);
-            maxcor = (maxcor < correction) ? correction : maxcor;//нахождение максимальной коррекции
-			mincor = (mincor > correction) ? correction : mincor;//нахождение минимальной коррекции
+            SYSTEMTIME tm_current, tm_NTP;
+            GetSystemTime(&tm_current);
 
-            cout << " Date and time " << tm.wMonth << "/" << tm.wDay << "/" << tm.wYear << " " << endl
-				<< tm.wHour << " Hours " << tm.wMinute << " Minutes " << tm.wSecond << " Seconds " << tm.wMilliseconds
-				<< " Milliseconds " << endl << tick_number++ << endl
-				<< " Correction = " << correction << " Maximum/minimum correction: "
-				<< maxcor << "/" << mincor << endl << endl;
+            char buff[128]; // буффер для вывода отметки времени в консоль
+            // заполняем буффер данными в таком формате [2025/01/17 08:18:16.569]
+            // ТЕКУЩЕЕ ВРЕМЯ НА УСТРОЙСТВЕ
+            snprintf(buff, sizeof(buff), "[%4d/%2d/%2d %2d:%2d:%2d.%3d]", tm_current.wYear, tm_current.wMonth, tm_current.wDay, tm_current.wHour, tm_current.wMinute, tm_current.wSecond, tm_current.wMilliseconds);
+            cout << buff << " current machine timestamp" << endl;
 
-            corrections.push_back(correction); //ЗАПОМИНАЕМ ТЕКУЩУЮ КОРРЕКЦИЮ
+            tm_NTP = getDateTimeFromNtp(response.t2_timestamp);
+            // заполняем буффер данными в таком формате [2025/01/17 08:18:16.569]
+            // ВРЕМЯ NTP СЕРВЕРЕ
+            snprintf(buff, sizeof(buff), "[%4d/%2d/%2d %2d:%2d:%2d.%3d]", tm_NTP.wYear, tm_NTP.wMonth, tm_NTP.wDay, tm_NTP.wHour, tm_NTP.wMinute, tm_NTP.wSecond, tm_NTP.wMilliseconds);
+            cout << buff << " NTP server timestamp" << endl;
+            cout << "Difference between current time and NTP: " << calculateDefferenceNtpCurrent(tm_NTP, tm_current) << " ms" << endl << endl;
+
 
             Sleep(Tc);
             tick_number++;
         }
-
-        int average = calculateAverageCorrection(corrections); //подсчитываем среднее значение коррекции
-        cout << "Average correction = " << average << endl;
     }
     catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
